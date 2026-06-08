@@ -1,99 +1,168 @@
-# SportsFusion Mobile
+# SportsFusion
 
-F1 live race companion — the mobile client for the SportsFusion backend.
-Built with Expo (React Native) + TypeScript + Expo Router + Reanimated.
+A multi-sport mobile companion — **Formula 1** and **Football** — built with
+Expo (React Native) + TypeScript + Expo Router + Reanimated. One sport toggle
+swaps every tab between live F1 and football data, with five switchable themes
+and animation throughout.
+
+---
 
 ## Run it
 
+Requires Expo SDK 54 (matches the Expo Go app). From the project root:
+
 ```bash
 npm install
-npx expo install   # realigns native/expo deps to your SDK (recommended)
-npm start
+npx expo install --fix     # aligns native deps to your SDK
+npm run start              # or: npx expo start -c --lan
 ```
 
-Scan the QR with **Expo Go**, or press `w` for the browser. The **Standings**
-tab pulls live current-season F1 data on first load — pull down to refresh.
+Scan the QR with **Expo Go** on your phone (same Wi-Fi as the laptop). Press
+`r` to reload, or restart with `npx expo start -c --lan` to clear the cache
+after adding files. The `w` (web) preview is not supported — some data sources
+block browser-origin calls; use the native app.
 
-## Themes (live switcher)
+---
 
-Five complete, intentional themes — tap the swatches at the top of the Standings
-tab and the entire app recolours instantly (and remembers your choice):
+## Sports & tabs
+
+A **Formula 1 / Football** switch sits at the top of every tab. Flip it and all
+three tabs change what they show:
+
+| Tab | Formula 1 | Football |
+|-----|-----------|----------|
+| **Live** | Latest session + finishing order | Recent results (LIVE tag on in-play) |
+| **Standings** | Drivers' championship | League table / group tables |
+| **Schedule** | Race calendar + live countdown | Upcoming fixtures |
+
+For football, a **competition picker** lets you switch between the Premier
+League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League, and World Cup
+2026. Cups render as multiple **group tables** and tag fixtures by **stage**
+(Group Stage, Round of 16, …). Your sport, competition, and theme all persist.
+
+---
+
+## Data sources
+
+All real data. No backend required.
+
+- **F1 standings** — Jolpica (Ergast-compatible), free, no key.
+- **F1 live session + schedule** — OpenF1 (`api.openf1.org`), free historical
+  data, no key. Real-time during-race data is paywalled there, so the Live tab
+  reflects the most recent completed session and flags one as LIVE if in progress.
+- **Football** — football-data.org v4. **Requires a free API key** (see Config).
+  Free tier: 12 top competitions, league tables + fixtures, delayed scores,
+  10 requests/min.
+
+The football layer is built to stay under the rate limit two ways: a **60-second
+response cache** per endpoint (the Live and Schedule tabs share one `/matches`
+fetch), and **auto-throttle** that reads the API's rate-limit headers and pauses
+new requests when nearly out, instead of getting blocked.
+
+---
+
+## Config
+
+Edit `lib/config.ts`:
+
+- `FOOTBALL_API_KEY` — paste a free key from football-data.org/client/register.
+  Until it's set, the Football tabs show a friendly setup prompt (no error).
+
+> The key in a client app is visible in the bundle and shared across users
+> (10 req/min). Fine for a portfolio demo; for production, proxy it through a
+> backend and keep the key server-side.
+
+Competitions are listed in `lib/competitions.ts` — add a row to extend the picker.
+
+---
+
+## Themes
+
+Five complete themes, switchable live from swatches on the Standings tab; the
+whole app recolours instantly and remembers your choice:
 
 | Theme | Direction |
 |-------|-----------|
 | **Carbon** | Carbon-black + F1 red (default) |
-| **Monaco** | Midnight navy + champagne gold — luxury |
-| **Apex** | Pure black + acid lime — brutalist, high-contrast |
-| **Paddock** | Warm paper + crimson — editorial light theme |
-| **Heritage** | Espresso + British racing green — vintage motorsport |
+| **Monaco** | Midnight navy + champagne gold |
+| **Apex** | Pure black + acid lime (high-contrast) |
+| **Paddock** | Warm paper + crimson (light theme) |
+| **Heritage** | Espresso + British racing green |
 
-Themes flow through React context (`lib/theme-context.tsx`) and a palette
-registry (`lib/themes.ts`). Each screen builds its styles with `makeStyles(t)`,
-so switching is instant app-wide. Add a new theme by adding one entry to
-`themes` — no other changes needed. Selection persists via AsyncStorage.
-
-## Design & motion
-
-Broadcast-grade aesthetic with condensed motorsport type (Saira Condensed) and
-Reanimated motion:
-
-- **Championship-leader hero card** with a team-colour gradient wash.
-- **Staggered row entrances** — drivers spring up in sequence.
-- **Animated points bars** — a team-coloured fill grows relative to the leader.
-- **Press micro-interactions** — rows spring-scale on touch.
-- **Shimmer skeleton** while loading.
-- **Layout transitions** — rows animate into place on refresh.
-- **Pulsing LIVE signal** on the Live tab.
-
-## Structure
-
-```
-app/
-  _layout.tsx          ThemeProvider, fonts, ambient gradient
-  (tabs)/
-    _layout.tsx        themed tab navigator
-    index.tsx          Live  (placeholder, pulsing badge)
-    standings.tsx      Standings (functional + animated + themed)
-    schedule.tsx       Schedule (placeholder)
-components/
-  ThemePicker.tsx      live theme switcher
-lib/
-  themes.ts            the five theme palettes
-  theme-context.tsx    provider + useTheme()/useThemeControls()
-  config.ts            API_BASE — swap to your backend here
-  teamColors.ts        constructorId -> brand colour
-  types.ts             response types
-  api/standings.ts     fetch + parse (the only place the network lives)
-```
-
-## Swapping in your SportsFusion backend
-
-Ships pointed at the public Jolpica F1 API so it works with zero setup. When
-your backend exposes a standings route: edit `API_BASE` in `lib/config.ts`, then
-map your response into `DriverStanding[]` in `lib/api/standings.ts`. Screens
-never change — all network + parsing is isolated in `lib/api`.
-
-## Next: the Live screen (SSE)
-
-React Native's `fetch` has **no native `EventSource`**. To reuse your existing
-SportsFusion SSE stream: `npm install react-native-sse`, then consume the same
-stream. (Or add a WebSocket endpoint — more idiomatic for RN.)
+Themes flow through React context; every screen builds styles via `makeStyles(t)`,
+so switching is instant app-wide. Add one entry to `lib/themes.ts` for a new theme.
 
 ---
 
-### If `npm install` complains about versions
+## Motion
 
-SDK pins drift. Guaranteed-clean path — scaffold fresh and drop these files in:
+Reanimated throughout: a championship-leader hero card, staggered row entrances,
+animated points bars (F1 standings), a live ticking countdown (F1 schedule),
+press micro-interactions, shimmer skeletons while loading, layout transitions on
+refresh, and a pulsing LIVE indicator.
 
-```bash
-npx create-expo-app@latest sportsfusion-mobile
-# pick the default template, then copy app/ + components/ + lib/ + babel.config.js,
-# then:
-npx expo install react-native-reanimated expo-linear-gradient expo-font \
-  expo-splash-screen @react-native-async-storage/async-storage \
-  @expo-google-fonts/saira @expo-google-fonts/saira-condensed
+---
+
+## Crests & flags
+
+Football rows show club badges (PNG crests from football-data.org). National
+teams show a **flag emoji** built from an ISO country code. Anything that can't
+render (SVG crests, unmapped names, TBD knockout slots) falls back to an initials
+monogram — so a row never shows a blank. Country names are mapped in
+`components/football/Crest.tsx`.
+
+---
+
+## Project structure
+
+```
+app/
+  _layout.tsx              providers (theme / sport / competition), fonts, gradient
+  (tabs)/
+    _layout.tsx            themed tab navigator
+    index.tsx              Live  -> F1 session  OR  football results
+    standings.tsx          F1 drivers table  OR  football league/group table
+    schedule.tsx           F1 calendar+countdown  OR  football fixtures
+components/
+  SportSwitcher.tsx        F1 <-> Football toggle
+  ThemePicker.tsx          theme swatches
+  football/
+    CompetitionPicker.tsx  league/cup selector
+    FootballTable.tsx      league + grouped cup tables
+    FootballMatches.tsx    results / fixtures (one component, two modes)
+    Crest.tsx              flag emoji / crest image / monogram
+    SetupCard.tsx          API-key setup prompt
+lib/
+  config.ts                football API key + notes
+  competitions.ts          competition list for the picker
+  themes.ts                the five theme palettes
+  theme-context.tsx        useTheme / useThemeControls
+  sport-context.tsx        useSport (F1 / football)
+  football-competition-context.tsx   useCompetition
+  teamColors.ts            F1 constructor colours
+  types.ts                 F1 standings types
+  api/
+    standings.ts           F1 standings (Jolpica)
+    openf1.ts              F1 session + schedule (OpenF1)
+    football.ts            football table + matches, cache + throttle
 ```
 
-> `babel.config.js` includes the Reanimated plugin (must be last). If animations
-> don't run or themes look off, clear the cache: `npx expo start -c`.
-"# sportfusion-mobile" 
+---
+
+## Known limitations
+
+- Football needs a free key; F1 works with none.
+- football-data.org free tier is delayed (not real-time) and capped at 10 req/min.
+- The web build is unsupported (browser-origin API blocks); use the native app.
+- World Cup national-team badges are SVG, so they render as flag emoji rather
+  than the federation crest; any country name not in the map shows initials.
+- Built and statically checked; the device is the real test. Report any runtime
+  error and it can be patched quickly.
+
+---
+
+## Possible next steps
+
+- Shareable standalone build: EAS `preview` APK, or a hosted web version.
+- League picker enhancements (more competitions, persisted per sport).
+- Wire the F1 Live tab to a custom SSE backend for true real-time timing.
