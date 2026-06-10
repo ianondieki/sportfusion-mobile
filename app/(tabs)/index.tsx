@@ -18,6 +18,7 @@ import type { Theme } from "../../lib/themes";
 import SportSwitcher from "../../components/SportSwitcher";
 import { useSport } from "../../lib/sport-context";
 import FootballMatches from "../../components/football/FootballMatches";
+import F1StatsWidget from "../../components/live/F1StatsWidget";
 
 type Status = "loading" | "ready" | "error";
 
@@ -158,8 +159,50 @@ function SessionHeader({ data }: { data: LatestSession }) {
         {session.circuit_short_name} · {dateLabel}
       </Text>
 
+      <F1Dashboard data={data} />
+
       <Text style={styles.tableLabel}>FINISHING ORDER</Text>
     </Animated.View>
+  );
+}
+
+// Builds the live stats widget from REAL session data (positions, tire stints,
+// gaps). Insights are factual summaries computed from that data — APEX's
+// opinionated takes live in the Chat tab.
+function F1Dashboard({ data }: { data: LatestSession }) {
+  const top = data.entries.filter((e) => e.position !== 999).slice(0, 5);
+  if (top.length === 0) return null;
+
+  const leader = top[0];
+  const withTires = top.filter((e) => e.compound);
+
+  const insight1 = withTires.length
+    ? `Tires: ${withTires
+        .slice(0, 3)
+        .map((e) => `${e.acronym} on ${e.compound}`)
+        .join(", ")}.`
+    : `Tire & gap data stream during race sessions — this is ${data.session.session_name}.`;
+
+  const insight2 =
+    leader && top[1]?.gap
+      ? `${leader.acronym} leads; ${top[1].acronym} sits ${top[1].gap} back.`
+      : leader
+      ? `${leader.fullName} tops the order.`
+      : "Awaiting classification.";
+
+  return (
+    <F1StatsWidget
+      drivers={top.map((e) => ({
+        position: e.position,
+        name: e.acronym || e.fullName,
+        team: e.team,
+        gap: e.gap ?? "",
+        tireCompound: e.compound ?? "",
+        tireAge: e.tireAge ?? "",
+      }))}
+      insight1={insight1}
+      insight2={insight2}
+    />
   );
 }
 

@@ -36,6 +36,7 @@ export interface Theme {
   radius: typeof radius;
   space: typeof space;
   font: typeof font;
+  fontScale?: number;
 }
 
 const base = { radius, space, font };

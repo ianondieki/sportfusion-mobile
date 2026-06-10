@@ -11,6 +11,7 @@ import {
 } from "@expo-google-fonts/saira-condensed";
 import { Saira_400Regular, Saira_600SemiBold } from "@expo-google-fonts/saira";
 import { ThemeProvider, useTheme } from "../lib/theme-context";
+import { PreferencesProvider } from "../lib/preferences-context";
 import { SportProvider } from "../lib/sport-context";
 import { CompetitionProvider } from "../lib/football-competition-context";
 
@@ -32,11 +33,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <SportProvider>
-        <CompetitionProvider>
-          <Shell />
-        </CompetitionProvider>
-      </SportProvider>
+      <PreferencesProvider>
+        <SportProvider>
+          <CompetitionProvider>
+            <Shell />
+          </CompetitionProvider>
+        </SportProvider>
+      </PreferencesProvider>
     </ThemeProvider>
   );
 }

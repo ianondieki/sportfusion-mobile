@@ -17,7 +17,8 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0F"
-      }
+      },
+      "package": "com.nyamunga.sportsfusionmobile"
     },
     "web": {
       "bundler": "metro",
@@ -26,6 +27,12 @@
     "plugins": [
       "expo-router",
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "aa66ea70-6852-4a11-b12a-ebcd1e8d74bc"
+      }
+    }
   }
 }

@@ -15,6 +15,7 @@ import type { Theme } from "../../lib/themes";
 import SportSwitcher from "../SportSwitcher";
 import CompetitionPicker from "./CompetitionPicker";
 import Crest from "./Crest";
+import FootballStatsWidget from "./FootballStatsWidget";
 import SetupCard from "./SetupCard";
 
 type Mode = "results" | "fixtures";
@@ -69,6 +70,13 @@ export default function FootballMatches({ mode }: { mode: Mode }) {
       {state.status === "ready" ? (
         <>
           <Text style={styles.kicker}>{state.competition?.toUpperCase()}</Text>
+          {mode === "results" && state.matches.length > 0 ? (
+            <FootballStatsWidget
+              match={state.matches[0]}
+              competition={state.competition}
+              competitionCode={competition}
+            />
+          ) : null}
           <Text style={styles.tableLabel}>
             {mode === "results" ? "RECENT RESULTS" : "UPCOMING FIXTURES"}
           </Text>

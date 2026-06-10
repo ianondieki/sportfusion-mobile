@@ -3,11 +3,13 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { themes, DEFAULT_THEME, type Theme, type ThemeName } from "./themes";
+import { usePreferences, resolveFonts, FONT_SCALE } from "./preferences-context";
 
 const STORAGE_KEY = "sportsfusion.theme";
 
@@ -47,7 +49,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Most components just need the palette:
-export const useTheme = (): Theme => useContext(ThemeContext).theme;
+// Most components just need the palette — now blended with the user's font
+// preferences (type propagates app-wide via the font tokens; scale is exposed
+// as theme.fontScale for components that opt into it).
+export const useTheme = (): Theme => {
+  const base = useContext(ThemeContext).theme;
+  const { fontChoice, fontSize } = usePreferences();
+  return useMemo(
+    () => ({
+      ...base,
+      font: resolveFonts(fontChoice, base.font),
+      fontScale: FONT_SCALE[fontSize],
+    }),
+    [base, fontChoice, fontSize]
+  );
+};
 // The switcher needs the setter too:
 export const useThemeControls = () => useContext(ThemeContext);
