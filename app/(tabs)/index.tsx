@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+  Pressable,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   FadeInDown,
@@ -19,6 +27,7 @@ import SportSwitcher from "../../components/SportSwitcher";
 import { useSport } from "../../lib/sport-context";
 import FootballMatches from "../../components/football/FootballMatches";
 import F1StatsWidget from "../../components/live/F1StatsWidget";
+import { buildWatchParams } from "../../lib/streams";
 
 type Status = "loading" | "ready" | "error";
 
@@ -140,10 +149,30 @@ function SessionHeader({ data }: { data: LatestSession }) {
       <SportSwitcher />
       <View style={styles.badgeRow}>
         {isLive ? (
-          <View style={[styles.badge, { backgroundColor: t.color.surfaceAlt }]}>
-            <Animated.View style={[styles.dot, dotStyle]} />
-            <Text style={[styles.badgeText, { color: t.color.live }]}>LIVE</Text>
-          </View>
+          <>
+            <View style={[styles.badge, { backgroundColor: t.color.surfaceAlt }]}>
+              <Animated.View style={[styles.dot, dotStyle]} />
+              <Text style={[styles.badgeText, { color: t.color.live }]}>LIVE</Text>
+            </View>
+            <Pressable
+              style={[styles.badge, styles.watchBadge]}
+              onPress={() =>
+                router.push({
+                  pathname: "/watch",
+                  params: buildWatchParams(
+                    "f1",
+                    session.session_name,
+                    `${session.country_name} · ${session.circuit_short_name}`
+                  ),
+                })
+              }
+            >
+              <Ionicons name="play" size={11} color={t.color.live} />
+              <Text style={[styles.badgeText, { color: t.color.live }]}>
+                WATCH LIVE
+              </Text>
+            </Pressable>
+          </>
         ) : (
           <View style={[styles.badge, { backgroundColor: t.color.surfaceAlt }]}>
             <Text style={[styles.badgeText, { color: t.color.textDim }]}>
@@ -262,7 +291,8 @@ const makeStyles = (t: Theme) =>
     },
 
     header: { marginTop: t.space(4), marginBottom: t.space(2) },
-    badgeRow: { flexDirection: "row", marginBottom: t.space(3) },
+    badgeRow: { flexDirection: "row", gap: t.space(2), marginBottom: t.space(3) },
+    watchBadge: { borderWidth: 1, borderColor: t.color.live },
     badge: {
       flexDirection: "row",
       alignItems: "center",

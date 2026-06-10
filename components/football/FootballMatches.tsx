@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+  Pressable,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import {
   fetchResults,
@@ -12,6 +21,7 @@ import {
 import { useCompetition } from "../../lib/football-competition-context";
 import { useTheme } from "../../lib/theme-context";
 import type { Theme } from "../../lib/themes";
+import { buildWatchParams } from "../../lib/streams";
 import SportSwitcher from "../SportSwitcher";
 import CompetitionPicker from "./CompetitionPicker";
 import Crest from "./Crest";
@@ -137,7 +147,15 @@ export default function FootballMatches({ mode }: { mode: Mode }) {
 function MatchRow({ item, index, mode }: { item: Match; index: number; mode: Mode }) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
+  const { competition } = useCompetition();
   const live = isLive(item.status);
+
+  const watchLive = useCallback(() => {
+    router.push({
+      pathname: "/watch",
+      params: buildWatchParams(competition, `${item.home} vs ${item.away}`),
+    });
+  }, [competition, item.home, item.away]);
 
   const kickoff = new Date(item.utcDate);
   const dateLabel = kickoff.toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -176,8 +194,14 @@ function MatchRow({ item, index, mode }: { item: Match; index: number; mode: Mod
       )}
 
       {live ? (
-        <View style={styles.liveTag}>
-          <Text style={styles.liveText}>LIVE</Text>
+        <View style={styles.liveCol}>
+          <View style={styles.liveTag}>
+            <Text style={styles.liveText}>LIVE</Text>
+          </View>
+          <Pressable style={styles.watchBtn} onPress={watchLive} hitSlop={6}>
+            <Ionicons name="play" size={10} color={t.color.live} />
+            <Text style={styles.watchText}>WATCH</Text>
+          </Pressable>
         </View>
       ) : null}
     </Animated.View>
@@ -232,12 +256,28 @@ const makeStyles = (t: Theme) =>
     kickBox: { alignItems: "flex-end", minWidth: 56 },
     kickDate: { color: t.color.textDim, fontFamily: t.font.bodyMed, fontSize: 13 },
     kickTime: { color: t.color.textFaint, fontFamily: t.font.body, fontSize: 12 },
+    liveCol: { marginLeft: t.space(3), alignItems: "center", gap: 6 },
     liveTag: {
-      marginLeft: t.space(3),
       backgroundColor: t.color.live,
       borderRadius: t.radius.pill,
       paddingHorizontal: 8,
       paddingVertical: 2,
     },
     liveText: { color: "#04210F", fontFamily: t.font.bodyMed, fontSize: 9, letterSpacing: 1 },
+    watchBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderWidth: 1,
+      borderColor: t.color.live,
+      borderRadius: t.radius.pill,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    watchText: {
+      color: t.color.live,
+      fontFamily: t.font.bodyMed,
+      fontSize: 9,
+      letterSpacing: 1,
+    },
   });

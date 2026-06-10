@@ -26,7 +26,20 @@
     },
     "plugins": [
       "expo-router",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-video",
+        {
+          "supportsPictureInPicture": true
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "SportsFusion uses the microphone so you can talk to APEX.",
+          "speechRecognitionPermission": "SportsFusion uses speech recognition to turn your voice into chat messages."
+        }
+      ]
     ],
     "extra": {
       "router": {},

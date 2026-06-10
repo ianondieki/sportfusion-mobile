@@ -63,6 +63,7 @@ function Shell() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="watch" options={{ presentation: "modal" }} />
       </Stack>
     </View>
   );
