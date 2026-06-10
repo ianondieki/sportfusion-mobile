@@ -40,6 +40,9 @@ export default function TabsLayout() {
             height: 64,
             paddingTop: 6,
           },
+          // Android: don't leave a dead tab bar floating above the keyboard
+          // while typing to APEX.
+          tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: t.color.accent,
           tabBarInactiveTintColor: t.color.textFaint,
           tabBarLabelStyle: {

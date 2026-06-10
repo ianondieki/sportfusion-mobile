@@ -61,12 +61,43 @@ new requests when nearly out, instead of getting blocked.
 
 ---
 
+## APEX chat, voice & Watch Live
+
+The **Chat** tab hosts APEX, a Gemini-powered sports companion grounded in the
+app's real standings/results.
+
+- **Voice replies** — tap the speaker icon in the chat header and APEX reads
+  answers aloud (`expo-speech`, works everywhere including Expo Go).
+- **Voice input** — tap the mic next to the text box and dictate your question;
+  the transcript fills the input live and sends when you finish speaking.
+  Uses `expo-speech-recognition`, a native module that is **not in Expo Go** —
+  run `npx expo run:android` / `run:ios` or an EAS dev build to enable it
+  (in Expo Go the mic explains this instead of crashing).
+- **Watch Live** — when a match or F1 session is live right now, a pulsing
+  **Watch live** chip appears above the chat input, live football rows get a
+  **WATCH** button, and the F1 live header gets **WATCH LIVE**. All of them
+  open an in-app HLS player (`expo-video`, fullscreen + picture-in-picture).
+
+**About live sports streams:** there is no free, legal API that serves live
+video of top-flight football or F1 — broadcast video rights are licensed per
+region (F1 TV, DAZN, Sky, …). So the player is **bring-your-own-stream**: map
+competition codes to HLS URLs you're entitled to watch in
+`LIVE_STREAM_SOURCES` (`lib/config.ts`), or point an entry at the official
+broadcaster page (`kind: "web"`) to hand off legally. Unmapped events fall
+back to a free public demo HLS stream so the whole flow works out of the box.
+
+---
+
 ## Config
 
 Edit `lib/config.ts`:
 
 - `FOOTBALL_API_KEY` — paste a free key from football-data.org/client/register.
   Until it's set, the Football tabs show a friendly setup prompt (no error).
+- `GEMINI_API_KEY` — free key from aistudio.google.com/app/apikeys; switches on
+  the APEX chatbot. `GEMINI_MODEL` defaults to `gemini-2.5-flash`.
+- `APIFOOTBALL_API_KEY` — optional, adds real match stats (possession, shots…).
+- `LIVE_STREAM_SOURCES` / `DEMO_STREAM_URL` — Watch Live sources (see above).
 
 > The key in a client app is visible in the bundle and shared across users
 > (10 req/min). Fine for a portfolio demo; for production, proxy it through a
