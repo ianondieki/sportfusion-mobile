@@ -8,6 +8,7 @@
 //     of crashing at import time.
 
 import * as Speech from "expo-speech";
+import { requireOptionalNativeModule } from "expo-modules-core";
 
 // ---------------------------------------------------------------------------
 // Text-to-speech
@@ -64,12 +65,23 @@ let recognition: RecognitionModule | null | undefined;
 
 function getRecognition(): RecognitionModule | null {
   if (recognition !== undefined) return recognition;
+
+  // Probe for the native module WITHOUT importing the package. The package
+  // calls requireNativeModule() at its top level, and Metro reports a module
+  // factory that throws straight to the fatal red-screen handler — a normal
+  // try/catch around require() never sees it. requireOptionalNativeModule
+  // returns null instead of throwing, so this is safe in Expo Go.
+  if (!requireOptionalNativeModule("ExpoSpeechRecognition")) {
+    recognition = null; // Expo Go / module not in this build
+    return recognition;
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod = require("expo-speech-recognition");
     recognition = (mod.ExpoSpeechRecognitionModule as RecognitionModule) ?? null;
   } catch {
-    recognition = null; // Expo Go / module not in this build
+    recognition = null;
   }
   return recognition;
 }
