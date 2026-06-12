@@ -198,16 +198,24 @@ function MatchRow({
     ? [item.competitionName, item.stage].filter(Boolean).join(" · ") || null
     : item.stage;
 
-  const watchLive = useCallback(() => {
+  const openMatch = useCallback(() => {
     router.push({
       pathname: "/watch",
       params: buildWatchParams(
         streamKey,
         `${item.home} vs ${item.away}`,
-        item.competitionName ?? undefined
+        item.competitionName ?? undefined,
+        {
+          status: live
+            ? "live"
+            : item.status === "FINISHED"
+            ? "finished"
+            : "upcoming",
+          kickoff: item.utcDate,
+        }
       ),
     });
-  }, [streamKey, item.home, item.away, item.competitionName]);
+  }, [streamKey, item, live]);
 
   const kickoff = new Date(item.utcDate);
   const dateLabel = kickoff.toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -221,6 +229,9 @@ function MatchRow({
         .damping(16)}
       style={[styles.row, live && { borderColor: t.color.live, borderWidth: 1.5 }]}
     >
+      {/* whole row opens the match hub: live → watch, upcoming → where to
+          watch at kickoff, finished → highlights */}
+      <Pressable style={styles.rowPress} onPress={openMatch}>
       <View style={styles.teams}>
         {tagLabel ? <Text style={styles.stage}>{tagLabel}</Text> : null}
         <View style={styles.teamLine}>
@@ -250,12 +261,20 @@ function MatchRow({
           <View style={styles.liveTag}>
             <Text style={styles.liveText}>LIVE</Text>
           </View>
-          <Pressable style={styles.watchBtn} onPress={watchLive} hitSlop={6}>
+          <Pressable style={styles.watchBtn} onPress={openMatch} hitSlop={6}>
             <Ionicons name="play" size={10} color={t.color.live} />
             <Text style={styles.watchText}>WATCH</Text>
           </Pressable>
         </View>
-      ) : null}
+      ) : (
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={t.color.textFaint}
+          style={{ marginLeft: t.space(2) }}
+        />
+      )}
+      </Pressable>
     </Animated.View>
   );
 }
@@ -293,6 +312,7 @@ const makeStyles = (t: Theme) =>
       paddingHorizontal: t.space(4),
       marginBottom: t.space(2),
     },
+    rowPress: { flex: 1, flexDirection: "row", alignItems: "center" },
     teams: { flex: 1, gap: 6 },
     teamLine: { flexDirection: "row", alignItems: "center", gap: 8 },
     stage: {
