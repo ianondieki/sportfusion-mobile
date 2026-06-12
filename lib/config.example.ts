@@ -1,3 +1,15 @@
+// ===========================================================================
+// TEMPLATE — copy this file to lib/config.ts and fill in your own keys.
+//
+//   cp lib/config.example.ts lib/config.ts        (macOS/Linux)
+//   copy lib\config.example.ts lib\config.ts      (Windows)
+//
+// lib/config.ts is gitignored on purpose: your real API keys live only on
+// your machine and can never be committed or blocked by push protection.
+// (.easignore makes sure your local lib/config.ts IS still uploaded to EAS
+// build servers — gitignored files are otherwise excluded from builds.)
+// ===========================================================================
+
 // ---------------------------------------------------------------------------
 // API endpoint configuration
 // ---------------------------------------------------------------------------

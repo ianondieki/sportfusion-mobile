@@ -1,0 +1,13 @@
+# Controls what is uploaded to EAS build servers. When this file exists, EAS
+# uses it INSTEAD of .gitignore — which is exactly what we need: lib/config.ts
+# is gitignored (keys stay out of the repo) but the build servers still need
+# it to bundle the app.
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+expo-env.d.ts
+android/
+ios/
