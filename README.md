@@ -90,7 +90,15 @@ back to a free public demo HLS stream so the whole flow works out of the box.
 
 ## Config
 
-Edit `lib/config.ts`:
+`lib/config.ts` is **gitignored on purpose** — your real API keys live only on
+your machine and can never be accidentally committed. First time setup:
+
+```
+cp lib/config.example.ts lib/config.ts        # macOS/Linux
+copy lib\config.example.ts lib\config.ts      # Windows
+```
+
+Then fill in your keys:
 
 - `FOOTBALL_API_KEY` — paste a free key from football-data.org/client/register.
   Until it's set, the Football tabs show a friendly setup prompt (no error).
@@ -98,6 +106,9 @@ Edit `lib/config.ts`:
   the APEX chatbot. `GEMINI_MODEL` defaults to `gemini-2.5-flash`.
 - `APIFOOTBALL_API_KEY` — optional, adds real match stats (possession, shots…).
 - `LIVE_STREAM_SOURCES` / `DEMO_STREAM_URL` — Watch Live sources (see above).
+
+`.easignore` ensures your local `lib/config.ts` still uploads to EAS build
+servers (gitignored files are otherwise excluded from builds).
 
 > The key in a client app is visible in the bundle and shared across users
 > (10 req/min). Fine for a portfolio demo; for production, proxy it through a

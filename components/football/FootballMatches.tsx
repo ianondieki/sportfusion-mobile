@@ -14,6 +14,7 @@ import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import {
   fetchResults,
   fetchFixtures,
+  fetchLiveAndToday,
   isLive,
   MissingKeyError,
   type Match,
@@ -43,16 +44,23 @@ export default function FootballMatches({ mode }: { mode: Mode }) {
   const { competition } = useCompetition();
 
   const [state, setState] = useState<State>({ status: "loading" });
+  const [today, setToday] = useState<Match[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
     async (isRefresh = false) => {
       if (!isRefresh) setState({ status: "loading" });
       try {
+        // cross-competition live/today board (results mode only) — best-effort
+        const todayPromise =
+          mode === "results"
+            ? fetchLiveAndToday().catch(() => [] as Match[])
+            : Promise.resolve([] as Match[]);
         const { competition: name, matches } =
           mode === "results"
             ? await fetchResults(competition)
             : await fetchFixtures(competition);
+        setToday(await todayPromise);
         setState({ status: "ready", competition: name, matches });
       } catch (e) {
         if (e instanceof MissingKeyError) setState({ status: "setup" });
@@ -63,6 +71,14 @@ export default function FootballMatches({ mode }: { mode: Mode }) {
     },
     [mode, competition]
   );
+
+  // auto-refresh while anything on the board is live
+  const anyLive = today.some((m) => isLive(m.status));
+  useEffect(() => {
+    if (!anyLive) return;
+    const timer = setInterval(() => load(true), 60_000);
+    return () => clearInterval(timer);
+  }, [anyLive, load]);
 
   useEffect(() => {
     load();
@@ -79,6 +95,24 @@ export default function FootballMatches({ mode }: { mode: Mode }) {
       <CompetitionPicker />
       {state.status === "ready" ? (
         <>
+          {mode === "results" && today.length > 0 ? (
+            <>
+              <Text style={styles.tableLabel}>LIVE & TODAY · ALL COMPETITIONS</Text>
+              {today.map((m) => (
+                <MatchRow
+                  key={`today-${m.id}`}
+                  item={m}
+                  index={0}
+                  mode={
+                    isLive(m.status) || m.status === "FINISHED"
+                      ? "results"
+                      : "fixtures"
+                  }
+                  showCompetition
+                />
+              ))}
+            </>
+          ) : null}
           <Text style={styles.kicker}>{state.competition?.toUpperCase()}</Text>
           {mode === "results" && state.matches.length > 0 ? (
             <FootballStatsWidget
@@ -144,18 +178,44 @@ export default function FootballMatches({ mode }: { mode: Mode }) {
   );
 }
 
-function MatchRow({ item, index, mode }: { item: Match; index: number; mode: Mode }) {
+function MatchRow({
+  item,
+  index,
+  mode,
+  showCompetition = false,
+}: {
+  item: Match;
+  index: number;
+  mode: Mode;
+  showCompetition?: boolean;
+}) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
   const { competition } = useCompetition();
   const live = isLive(item.status);
+  const streamKey = item.competitionCode ?? competition;
+  const tagLabel = showCompetition
+    ? [item.competitionName, item.stage].filter(Boolean).join(" · ") || null
+    : item.stage;
 
-  const watchLive = useCallback(() => {
+  const openMatch = useCallback(() => {
     router.push({
       pathname: "/watch",
-      params: buildWatchParams(competition, `${item.home} vs ${item.away}`),
+      params: buildWatchParams(
+        streamKey,
+        `${item.home} vs ${item.away}`,
+        item.competitionName ?? undefined,
+        {
+          status: live
+            ? "live"
+            : item.status === "FINISHED"
+            ? "finished"
+            : "upcoming",
+          kickoff: item.utcDate,
+        }
+      ),
     });
-  }, [competition, item.home, item.away]);
+  }, [streamKey, item, live]);
 
   const kickoff = new Date(item.utcDate);
   const dateLabel = kickoff.toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -169,8 +229,11 @@ function MatchRow({ item, index, mode }: { item: Match; index: number; mode: Mod
         .damping(16)}
       style={[styles.row, live && { borderColor: t.color.live, borderWidth: 1.5 }]}
     >
+      {/* whole row opens the match hub: live → watch, upcoming → where to
+          watch at kickoff, finished → highlights */}
+      <Pressable style={styles.rowPress} onPress={openMatch}>
       <View style={styles.teams}>
-        {item.stage ? <Text style={styles.stage}>{item.stage}</Text> : null}
+        {tagLabel ? <Text style={styles.stage}>{tagLabel}</Text> : null}
         <View style={styles.teamLine}>
           <Crest uri={item.homeCrest} name={item.home} size={20} />
           <Text style={styles.team} numberOfLines={1}>{item.home}</Text>
@@ -198,12 +261,20 @@ function MatchRow({ item, index, mode }: { item: Match; index: number; mode: Mod
           <View style={styles.liveTag}>
             <Text style={styles.liveText}>LIVE</Text>
           </View>
-          <Pressable style={styles.watchBtn} onPress={watchLive} hitSlop={6}>
+          <Pressable style={styles.watchBtn} onPress={openMatch} hitSlop={6}>
             <Ionicons name="play" size={10} color={t.color.live} />
             <Text style={styles.watchText}>WATCH</Text>
           </Pressable>
         </View>
-      ) : null}
+      ) : (
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={t.color.textFaint}
+          style={{ marginLeft: t.space(2) }}
+        />
+      )}
+      </Pressable>
     </Animated.View>
   );
 }
@@ -241,6 +312,7 @@ const makeStyles = (t: Theme) =>
       paddingHorizontal: t.space(4),
       marginBottom: t.space(2),
     },
+    rowPress: { flex: 1, flexDirection: "row", alignItems: "center" },
     teams: { flex: 1, gap: 6 },
     teamLine: { flexDirection: "row", alignItems: "center", gap: 8 },
     stage: {

@@ -4,7 +4,7 @@
 // hidden. Reuses the cached fetchers, so this costs no extra rate budget when
 // the Live tab has already loaded.
 
-import { fetchResults, isLive } from "./api/football";
+import { fetchLiveAndToday, isLive } from "./api/football";
 import { fetchLatestSession } from "./api/openf1";
 
 export interface LiveEvent {
@@ -20,14 +20,16 @@ export async function findLiveEvents(
 ): Promise<LiveEvent[]> {
   try {
     if (sport === "football") {
-      const { competition: name, matches } = await fetchResults(competition);
+      // scan ALL competitions, not just the picker's selection — a live World
+      // Cup match should surface even while the picker sits on the PL
+      const matches = await fetchLiveAndToday();
       return matches
         .filter((m) => isLive(m.status))
         .slice(0, 3)
         .map((m) => ({
-          streamKey: competition,
+          streamKey: m.competitionCode ?? competition,
           title: `${m.home} vs ${m.away}`,
-          subtitle: name,
+          subtitle: m.competitionName ?? undefined,
         }));
     }
 
