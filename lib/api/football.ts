@@ -92,6 +92,8 @@ export interface Match {
   status: string;
   matchday: number;
   stage: string | null;
+  competitionCode: string | null;
+  competitionName: string | null;
   home: string;
   away: string;
   homeCrest: string | null;
@@ -148,6 +150,8 @@ function mapMatch(m: any): Match {
     status: m.status,
     matchday: m.matchday,
     stage: m.stage ? String(m.stage).replace(/_/g, " ") : null,
+    competitionCode: m.competition?.code ?? null,
+    competitionName: m.competition?.name ?? null,
     home: m.homeTeam?.shortName ?? m.homeTeam?.name ?? "TBD",
     away: m.awayTeam?.shortName ?? m.awayTeam?.name ?? "TBD",
     homeCrest: m.homeTeam?.crest ?? null,
@@ -182,4 +186,36 @@ export async function fetchFixtures(
 
 export function isLive(status: string): boolean {
   return status === "IN_PLAY" || status === "PAUSED";
+}
+
+// Cross-competition board: everything live RIGHT NOW plus matches within ±24h,
+// across ALL competitions on the plan — so a World Cup or Champions League
+// match surfaces even while the picker sits on a domestic league. Uses the
+// free-tier /matches endpoint: ONE request (cached 60s) regardless of how many
+// competitions are in play. The ±1 day window (not "today" UTC) avoids
+// timezone gaps for evening kickoffs in the Americas.
+export async function fetchLiveAndToday(): Promise<Match[]> {
+  const DAY = 86_400_000;
+  const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+  const now = Date.now();
+  const json = await getJSON(
+    `/matches?dateFrom=${fmt(now - DAY)}&dateTo=${fmt(now + DAY)}`
+  );
+  const all: Match[] = (json.matches ?? []).map(mapMatch);
+
+  // live first, then upcoming by kickoff, then recently finished
+  const rank = (m: Match) =>
+    isLive(m.status) ? 0 : ["TIMED", "SCHEDULED"].includes(m.status) ? 1 : 2;
+
+  return all
+    .filter(
+      (m) =>
+        isLive(m.status) || Math.abs(new Date(m.utcDate).getTime() - now) <= DAY
+    )
+    .sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
+    )
+    .slice(0, 12);
 }

@@ -81,6 +81,7 @@ export const LIVE_STREAM_SOURCES: Record<string, StreamSource> = {
   // Official broadcaster fallbacks (legal, may require a subscription):
   f1: { kind: "web", url: "https://f1tv.formula1.com", label: "F1 TV" },
   CL: { kind: "web", url: "https://www.uefa.com/uefachampionsleague/", label: "UEFA.com" },
+  WC: { kind: "web", url: "https://www.plus.fifa.com", label: "FIFA+" },
 };
 
 // Free public test stream (Mux) — used when no source is mapped above, so the
