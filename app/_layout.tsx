@@ -14,6 +14,9 @@ import { ThemeProvider, useTheme } from "../lib/theme-context";
 import { PreferencesProvider } from "../lib/preferences-context";
 import { SportProvider } from "../lib/sport-context";
 import { CompetitionProvider } from "../lib/football-competition-context";
+import { MatchRemindersProvider } from "../lib/match-reminders-context";
+import { configureNotifications } from "../lib/notifications";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -29,18 +32,27 @@ export default function RootLayout() {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded]);
 
+  // set up the notification handler / Android channel once at startup
+  useEffect(() => {
+    configureNotifications();
+  }, []);
+
   if (!fontsLoaded) return null;
 
   return (
-    <ThemeProvider>
-      <PreferencesProvider>
-        <SportProvider>
-          <CompetitionProvider>
-            <Shell />
-          </CompetitionProvider>
-        </SportProvider>
-      </PreferencesProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <PreferencesProvider>
+          <SportProvider>
+            <CompetitionProvider>
+              <MatchRemindersProvider>
+                <Shell />
+              </MatchRemindersProvider>
+            </CompetitionProvider>
+          </SportProvider>
+        </PreferencesProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -42,6 +42,24 @@ League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League, and World Cup
 
 ---
 
+## Match reminders
+
+Tap the **bell** on any upcoming fixture to get a local notification 15 minutes
+before kickoff — fully serverless (on-device scheduling via `expo-notifications`,
+persisted across restarts). Active reminders are listed under **Notifications**
+in the sidebar. Needs a dev/EAS build (local scheduled notifications are limited
+in Expo Go); the bell explains this if tapped there.
+
+---
+
+## Resilience
+
+A top-level **error boundary** catches any render crash and shows a themed
+"try again" screen instead of a white screen, so one bad API response can't
+take down the whole app.
+
+---
+
 ## Data sources
 
 All real data. No backend required.

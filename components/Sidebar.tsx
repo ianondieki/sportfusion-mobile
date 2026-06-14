@@ -19,6 +19,7 @@ import {
   type FontChoice,
   type FontSize,
 } from "../lib/preferences-context";
+import { useMatchReminders } from "../lib/match-reminders-context";
 
 type Section = "settings" | "trending" | "quick" | "notifications" | null;
 
@@ -47,7 +48,17 @@ export default function Sidebar({
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { fontChoice, fontSize, setFontChoice, setFontSize } = usePreferences();
+  const { reminders } = useMatchReminders();
   const [open, setOpen] = useState<Section>("settings");
+
+  const reminderList = useMemo(
+    () =>
+      Object.values(reminders).sort(
+        (a, b) =>
+          new Date(a.kickoffISO).getTime() - new Date(b.kickoffISO).getTime()
+      ),
+    [reminders]
+  );
 
   const toggle = (s: Section) => setOpen((cur) => (cur === s ? null : s));
 
@@ -181,7 +192,34 @@ export default function Sidebar({
             />
             {open === "notifications" && (
               <Animated.View entering={FadeIn.duration(200)} style={styles.drawerBody}>
-                <Text style={styles.empty}>No new notifications.</Text>
+                {reminderList.length === 0 ? (
+                  <Text style={styles.empty}>
+                    No reminders yet. Tap the bell on an upcoming match to get a
+                    kickoff alert.
+                  </Text>
+                ) : (
+                  reminderList.map((r) => {
+                    const k = new Date(r.kickoffISO);
+                    const when = k.toLocaleString(undefined, {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    return (
+                      <View key={r.matchId} style={styles.reminder}>
+                        <Ionicons name="notifications" size={15} color={t.color.accent} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.reminderTitle} numberOfLines={1}>
+                            {r.title}
+                          </Text>
+                          <Text style={styles.reminderWhen}>{when}</Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
               </Animated.View>
             )}
 
@@ -336,7 +374,16 @@ const makeStyles = (t: Theme) =>
       fontFamily: t.font.body,
       fontSize: 13,
       paddingVertical: t.space(2),
+      lineHeight: 18,
     },
+    reminder: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: t.space(2),
+      paddingVertical: t.space(2),
+    },
+    reminderTitle: { color: t.color.text, fontFamily: t.font.bodyMed, fontSize: 14 },
+    reminderWhen: { color: t.color.textDim, fontFamily: t.font.body, fontSize: 12 },
     signOut: {
       flexDirection: "row",
       alignItems: "center",

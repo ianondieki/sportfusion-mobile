@@ -39,6 +39,12 @@
           "microphonePermission": "SportsFusion uses the microphone so you can talk to APEX.",
           "speechRecognitionPermission": "SportsFusion uses speech recognition to turn your voice into chat messages."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#E10600"
+        }
       ]
     ],
     "extra": {

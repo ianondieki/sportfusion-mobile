@@ -6,6 +6,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Pressable,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -20,6 +21,7 @@ import {
   type Match,
 } from "../../lib/api/football";
 import { useCompetition } from "../../lib/football-competition-context";
+import { useMatchReminders } from "../../lib/match-reminders-context";
 import { useTheme } from "../../lib/theme-context";
 import type { Theme } from "../../lib/themes";
 import { buildWatchParams } from "../../lib/streams";
@@ -192,7 +194,12 @@ function MatchRow({
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
   const { competition } = useCompetition();
+  const { hasReminder, toggleReminder, available: remindersAvailable } =
+    useMatchReminders();
   const live = isLive(item.status);
+  const upcoming = !live && item.status !== "FINISHED" &&
+    new Date(item.utcDate).getTime() > Date.now();
+  const reminded = hasReminder(item.id);
   const streamKey = item.competitionCode ?? competition;
   const tagLabel = showCompetition
     ? [item.competitionName, item.stage].filter(Boolean).join(" · ") || null
@@ -216,6 +223,28 @@ function MatchRow({
       ),
     });
   }, [streamKey, item, live]);
+
+  const onBell = useCallback(async () => {
+    if (!remindersAvailable) {
+      Alert.alert(
+        "Reminders need a dev build",
+        "Scheduled notifications use a native module that isn't in Expo Go. " +
+          "Run a dev/EAS build and you'll get a kickoff alert 15 minutes before the match."
+      );
+      return;
+    }
+    const result = await toggleReminder({
+      matchId: item.id,
+      title: `${item.home} vs ${item.away}`,
+      competition: item.competitionName ?? undefined,
+      kickoffISO: item.utcDate,
+    });
+    if (result === "added") {
+      Alert.alert("Reminder set", "We'll ping you 15 minutes before kickoff. ⚡");
+    } else if (result === "denied") {
+      Alert.alert("Notifications off", "Enable notifications for SportsFusion in your phone settings to get reminders.");
+    }
+  }, [remindersAvailable, toggleReminder, item]);
 
   const kickoff = new Date(item.utcDate);
   const dateLabel = kickoff.toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -267,12 +296,18 @@ function MatchRow({
           </Pressable>
         </View>
       ) : (
-        <Ionicons
-          name="chevron-forward"
-          size={16}
-          color={t.color.textFaint}
-          style={{ marginLeft: t.space(2) }}
-        />
+        <View style={styles.trailing}>
+          {upcoming ? (
+            <Pressable onPress={onBell} hitSlop={8} style={styles.bell}>
+              <Ionicons
+                name={reminded ? "notifications" : "notifications-outline"}
+                size={18}
+                color={reminded ? t.color.accent : t.color.textFaint}
+              />
+            </Pressable>
+          ) : null}
+          <Ionicons name="chevron-forward" size={16} color={t.color.textFaint} />
+        </View>
       )}
       </Pressable>
     </Animated.View>
@@ -313,6 +348,8 @@ const makeStyles = (t: Theme) =>
       marginBottom: t.space(2),
     },
     rowPress: { flex: 1, flexDirection: "row", alignItems: "center" },
+    trailing: { flexDirection: "row", alignItems: "center", gap: t.space(2), marginLeft: t.space(2) },
+    bell: { padding: 2 },
     teams: { flex: 1, gap: 6 },
     teamLine: { flexDirection: "row", alignItems: "center", gap: 8 },
     stage: {
